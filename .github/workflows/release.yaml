@@ -84,18 +84,18 @@ jobs:
           wget -O /tmp/rcodesign https://cdn.discordapp.com/attachments/283356472258199552/1016767245717872700/rcodesign
           sudo install --mode 755 /tmp/rcodesign /usr/local/bin/rcodesign
 
-      - name: Setup Apple Developer certificate and API key
-        run: |
-          set -euo pipefail
-          touch /tmp/{apple_cert.p12,apple_cert_password.txt,apple_apikey.p8}
-          chmod 600 /tmp/{apple_cert.p12,apple_cert_password.txt,apple_apikey.p8}
-          echo "$AC_CERTIFICATE_P12_BASE64" | base64 -d > /tmp/apple_cert.p12
-          echo "$AC_CERTIFICATE_PASSWORD" > /tmp/apple_cert_password.txt
-          echo "$AC_APIKEY_P8_BASE64" | base64 -d > /tmp/apple_apikey.p8
-        env:
-          AC_CERTIFICATE_P12_BASE64: ${{ secrets.AC_CERTIFICATE_P12_BASE64 }}
-          AC_CERTIFICATE_PASSWORD: ${{ secrets.AC_CERTIFICATE_PASSWORD }}
-          AC_APIKEY_P8_BASE64: ${{ secrets.AC_APIKEY_P8_BASE64 }}
+      # - name: Setup Apple Developer certificate and API key
+      #   run: |
+      #     set -euo pipefail
+      #     touch /tmp/{apple_cert.p12,apple_cert_password.txt,apple_apikey.p8}
+      #     chmod 600 /tmp/{apple_cert.p12,apple_cert_password.txt,apple_apikey.p8}
+      #     echo "$AC_CERTIFICATE_P12_BASE64" | base64 -d > /tmp/apple_cert.p12
+      #     echo "$AC_CERTIFICATE_PASSWORD" > /tmp/apple_cert_password.txt
+      #     echo "$AC_APIKEY_P8_BASE64" | base64 -d > /tmp/apple_apikey.p8
+      #   env:
+      #     AC_CERTIFICATE_P12_BASE64: ${{ secrets.AC_CERTIFICATE_P12_BASE64 }}
+      #     AC_CERTIFICATE_PASSWORD: ${{ secrets.AC_CERTIFICATE_PASSWORD }}
+      #     AC_APIKEY_P8_BASE64: ${{ secrets.AC_APIKEY_P8_BASE64 }}
 
       - name: Build binaries
         run: |
@@ -103,70 +103,57 @@ jobs:
           go mod download
 
           version="$(./scripts/version.sh)"
+          echo "CODER_RELEASE_VERSION=$version" >> $GITHUB_ENV
           make gen/mark-fresh
           make -j \
             build/coder_"$version"_linux_{amd64,armv7,arm64}.{tar.gz,apk,deb,rpm} \
-            build/coder_"$version"_{darwin,windows}_{amd64,arm64}.zip \
+            build/coder_"$version"_windows_{amd64,arm64}.zip \
             build/coder_helm_"$version".tgz
         env:
-          CODER_SIGN_DARWIN: "1"
-          AC_CERTIFICATE_FILE: /tmp/apple_cert.p12
-          AC_CERTIFICATE_PASSWORD_FILE: /tmp/apple_cert_password.txt
-          AC_APIKEY_ISSUER_ID: ${{ secrets.AC_APIKEY_ISSUER_ID }}
-          AC_APIKEY_ID: ${{ secrets.AC_APIKEY_ID }}
-          AC_APIKEY_FILE: /tmp/apple_apikey.p8
+          CODER_SIGN_DARWIN: "0"
+          # AC_CERTIFICATE_FILE: /tmp/apple_cert.p12
+          # AC_CERTIFICATE_PASSWORD_FILE: /tmp/apple_cert_password.txt
+          # AC_APIKEY_ISSUER_ID: ${{ secrets.AC_APIKEY_ISSUER_ID }}
+          # AC_APIKEY_ID: ${{ secrets.AC_APIKEY_ID }}
+          # AC_APIKEY_FILE: /tmp/apple_apikey.p8
 
-      - name: Delete Apple Developer certificate and API key
-        run: rm -f /tmp/{apple_cert.p12,apple_cert_password.txt,apple_apikey.p8}
+      # - name: Delete Apple Developer certificate and API key
+      #   run: rm -f /tmp/{apple_cert.p12,apple_cert_password.txt,apple_apikey.p8}
 
-      - name: Build Linux Docker images
-        run: |
-          set -euxo pipefail
+      # - name: Build Linux Docker images
+      #   run: |
+      #     set -euxo pipefail
 
-          # build Docker images for each architecture
-          version="$(./scripts/version.sh)"
-          make -j build/coder_"$version"_linux_{amd64,arm64,armv7}.tag
+      #     # build Docker images for each architecture
+      #     version="$(./scripts/version.sh)"
+      #     make -j build/coder_"$version"_linux_{amd64,arm64,armv7}.tag
 
-          # we can't build multi-arch if the images aren't pushed, so quit now
-          # if dry-running
-          if [[ "$CODER_RELEASE" != *t* ]]; then
-            echo Skipping multi-arch docker builds due to dry-run.
-            exit 0
-          fi
+      #     # we can't build multi-arch if the images aren't pushed, so quit now
+      #     # if dry-running
+      #     if [[ "$CODER_RELEASE" != *t* ]]; then
+      #       echo Skipping multi-arch docker builds due to dry-run.
+      #       exit 0
+      #     fi
 
-          # build and push multi-arch manifest, this depends on the other images
-          # being pushed so will automatically push them.
-          make -j push/build/coder_"$version"_linux.tag
+      #     # build and push multi-arch manifest, this depends on the other images
+      #     # being pushed so will automatically push them.
+      #     make -j push/build/coder_"$version"_linux.tag
 
-          # if the current version is equal to the highest (according to semver)
-          # version in the repo, also create a multi-arch image as ":latest" and
-          # push it
-          if [[ "$(git tag | grep '^v' | grep -vE '(rc|dev|-|\+|\/)' | sort -r --version-sort | head -n1)" == "v$(./scripts/version.sh)" ]]; then
-            ./scripts/build_docker_multiarch.sh \
-              --push \
-              --target "$(./scripts/image_tag.sh --version latest)" \
-              $(cat build/coder_"$version"_linux_{amd64,arm64,armv7}.tag)
-          fi
+      #     # if the current version is equal to the highest (according to semver)
+      #     # version in the repo, also create a multi-arch image as ":latest" and
+      #     # push it
+      #     if [[ "$(git tag | grep '^v' | grep -vE '(rc|dev|-|\+|\/)' | sort -r --version-sort | head -n1)" == "v$(./scripts/version.sh)" ]]; then
+      #       ./scripts/build_docker_multiarch.sh \
+      #         --push \
+      #         --target "$(./scripts/image_tag.sh --version latest)" \
+      #         $(cat build/coder_"$version"_linux_{amd64,arm64,armv7}.tag)
+      #     fi
 
       - name: ls build
         run: ls -lh build
 
-      - name: Publish release
-        run: |
-          ./scripts/publish_release.sh \
-            ${{ (github.event.inputs.dry_run || github.event.inputs.snapshot) && '--dry-run' }} \
-            ./build/*.zip \
-            ./build/*.tar.gz \
-            ./build/*.tgz \
-            ./build/*.apk \
-            ./build/*.deb \
-            ./build/*.rpm
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload artifacts to actions (if dry-run or snapshot)
-        if: ${{ github.event.inputs.dry_run || github.event.inputs.snapshot }}
-        uses: actions/upload-artifact@v2
+      - name: Upload artifacts to actions
+        uses: actions/upload-artifact@v3
         with:
           name: release-artifacts
           path: |
@@ -177,3 +164,82 @@ jobs:
             ./build/*.deb
             ./build/*.rpm
           retention-days: 7
+
+      - name: Upload artifacts for Windows installer build
+        uses: actions/upload-artifact@v3
+        with:
+          name: release-artifacts
+          path: |
+            ./build/*.exe
+          retention-days: 1
+
+      - name: Publish to Chocolatey
+        uses: ./.github/actions/chocolatey
+        with:
+          # publish: ${{ ! (github.event.inputs.dry_run || github.event.inputs.snapshot) }}
+          publish: false
+          version: ${{ env.CODER_RELEASE_VERSION }}
+          chocolateyKey: ${{ secrets.CHOCOLATEY_KEY }}
+
+  windows-installer:
+    runs-on: windows-latest
+    needs: [release]
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Fetch git tags
+        run: git fetch --tags --force
+
+      - name: Download artefact
+        uses: actions/download-artifact@v3
+
+      - name: Install WiX Toolset
+        run: nuget install WiX
+
+      - name: Get version
+        run: echo "CODER_RELEASE_VERSION=$(./scripts/version.sh)" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Crate MSI installer
+        run: |
+          forecah ($arch in @('amd64', 'arm64')) {
+            ./WiX.*/tools/candle.exe -arch "x64" -ext WixUIExtension -ext WixUtilExtension -out "./build/coder-${arch}.wixobj" "coder.wxs" -dCODER_RELEASE_VERSION="${env:CODER_RELEASE_VERSION}" -dCODER_RELEASE_ARCH="${arch}"
+            ./WiX.*/tools/light.exe -ext WixUIExtension -ext WixUtilExtension -out "./build/coder-windows-${arch}.msi" -sice:ICE61 -sice:ICE91 "./build/coder-${arch}.wixobj"
+          }
+
+      - name: Upload Windows builds to actions
+        uses: actions/upload-artifact@v3
+        with:
+          name: release-artifacts-windows
+          path: |
+            ./build/*.msi
+
+  github-release:
+    runs-on: ubuntu-latest
+    needs: [windows-installer]
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Fetch git tags
+        run: git fetch --tags --force
+
+      - name: Download artefact
+        uses: actions/download-artifact@v3
+
+      - name: Publish release
+        run: |
+          ./scripts/publish_release.sh \
+            ${{ (github.event.inputs.dry_run || github.event.inputs.snapshot) && '--dry-run' }} \
+            ./build/*.msi \
+            ./build/*.zip \
+            ./build/*.tar.gz \
+            ./build/*.tgz \
+            ./build/*.apk \
+            ./build/*.deb \
+            ./build/*.rpm
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
