@@ -196,6 +196,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: windows-builds
+          path: build
 
       - name: Install WiX Toolset
         run: nuget install WiX
@@ -205,7 +206,7 @@ jobs:
         shell: bash
 
       - name: ls build
-        run: ls
+        run: ls build
 
       - name: Crate MSI installer
         run: |
@@ -235,6 +236,8 @@ jobs:
 
       - name: Download artefact
         uses: actions/download-artifact@v3
+        with:
+          path: build
 
       - name: ls build
         run: ls -lh build
