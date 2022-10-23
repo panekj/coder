@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="windows-1252"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
+	<Product Name="Coder" Id="*" UpgradeCode="7446bdfb-7ebb-469a-aef0-ce498e25b435" Language="1033" Codepage="1252" Version="$(var.CODER_RELEASE_VERSION)" Manufacturer="Coder">
+		<Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+		<MajorUpgrade AllowSameVersionUpgrades="yes" DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+		<Icon Id="coder.exe" SourceFile=".\coder.ico" />
+		<Property Id="ARPPRODUCTICON" Value="coder.exe" />
+		<WixVariable Id="WixUILicenseRtf" Value=".\LICENSE.rtf"/>
+		<MediaTemplate EmbedCab="yes" />
+		<UIRef Id="WixUI_Minimal" />
+
+		<Feature Id="ProductFeature" Title="ConsoleApp" Level="1">
+			<ComponentRef Id="CoderExe" />
+			<ComponentRef Id="ModifyPathEnv" />
+		</Feature>
+
+		<!-- Create directories -->
+		<Directory Id="TARGETDIR" Name="SourceDir">
+			<Directory Id="ProgramFiles64Folder">
+				<Directory Id="CoderProgramFiles" Name="Coder" />
+			</Directory>
+		</Directory>
+
+		<!-- Application binaries -->
+		<DirectoryRef Id="CoderProgramFiles">
+			<Component Id="CoderExe" Guid="4f60dd8d-dbfe-46bb-a839-2b58baa9fceb">
+				<File Id="CoderExeFile" Source=".\build\coder_$(var.CODER_RELEASE_VERSION)_windows_$(var.CODER_RELEASE_ARCH).exe" Name="coder.exe" KeyPath="yes" />
+				<ServiceInstall
+					Id="ServiceInstaller"
+					Type="ownProcess"
+					Name="CoderService"
+					DisplayName="Coder"
+					Description="Coder service"
+					Start="auto"
+					Arguments="server"
+					Account="[SERVICEACCOUNT]"
+					Password="[SERVICEPASSWORD]"
+					ErrorControl="normal" />
+				<ServiceControl Id="StartService" Stop="both" Remove="uninstall" Name="Coder" Wait="yes" />
+			</Component>
+			<!-- Add to PATH -->
+			<Component Id="ModifyPathEnv" Guid="98141bd5-3a9c-4896-8420-9089361c186f" KeyPath="yes">
+				<Environment Id="PathEnv" Value="[CoderProgramFiles]" Name="PATH" Permanent="no" Part="first" Action="set" System="yes" />
+			</Component>
+		</DirectoryRef>
+	</Product>
+</Wix>
