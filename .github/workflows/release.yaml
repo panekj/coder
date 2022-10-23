@@ -238,6 +238,13 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           path: build
+          name: release-artifacts
+
+      - name: Download artefact
+        uses: actions/download-artifact@v3
+        with:
+          path: build
+          name: release-artifacts-windows
 
       - name: ls build
         run: ls -lh build
