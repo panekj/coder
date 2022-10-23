@@ -205,7 +205,7 @@ jobs:
         shell: bash
 
       - name: ls build
-        run: ls build
+        run: ls
 
       - name: Crate MSI installer
         run: |
