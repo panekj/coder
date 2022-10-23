@@ -168,7 +168,7 @@ jobs:
       - name: Upload artifacts for Windows installer build
         uses: actions/upload-artifact@v3
         with:
-          name: release-artifacts
+          name: windows-builds
           path: |
             ./build/*.exe
           retention-days: 1
@@ -194,6 +194,8 @@ jobs:
 
       - name: Download artefact
         uses: actions/download-artifact@v3
+        with:
+          name: windows-builds
 
       - name: Install WiX Toolset
         run: nuget install WiX
@@ -204,7 +206,7 @@ jobs:
 
       - name: Crate MSI installer
         run: |
-          forecah ($arch in @('amd64', 'arm64')) {
+          foreach ($arch in @('amd64', 'arm64')) {
             ./WiX.*/tools/candle.exe -arch "x64" -ext WixUIExtension -ext WixUtilExtension -out "./build/coder-${arch}.wixobj" "coder.wxs" -dCODER_RELEASE_VERSION="${env:CODER_RELEASE_VERSION}" -dCODER_RELEASE_ARCH="${arch}"
             ./WiX.*/tools/light.exe -ext WixUIExtension -ext WixUtilExtension -out "./build/coder-windows-${arch}.msi" -sice:ICE61 -sice:ICE91 "./build/coder-${arch}.wixobj"
           }
@@ -215,6 +217,7 @@ jobs:
           name: release-artifacts-windows
           path: |
             ./build/*.msi
+          retention-days: 7
 
   github-release:
     runs-on: ubuntu-latest
