@@ -247,7 +247,9 @@ jobs:
           name: release-artifacts-windows
 
       - name: ls build
-        run: ls -lh build
+        run: |
+          git reset --hard
+          ls -lh build
 
       - name: Publish release
         run: |
