@@ -204,6 +204,9 @@ jobs:
         run: echo "CODER_RELEASE_VERSION=$(./scripts/version.sh)" >> $GITHUB_ENV
         shell: bash
 
+      - name: ls build
+        run: ls build
+
       - name: Crate MSI installer
         run: |
           foreach ($arch in @('amd64', 'arm64')) {
@@ -232,6 +235,9 @@ jobs:
 
       - name: Download artefact
         uses: actions/download-artifact@v3
+
+      - name: ls build
+        run: ls -lh build
 
       - name: Publish release
         run: |
