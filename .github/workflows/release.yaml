@@ -258,7 +258,7 @@ jobs:
       - name: Publish release
         run: |
           ./scripts/publish_release.sh \
-            ${{ (github.event.inputs.dry_run || github.event.inputs.snapshot) && '--dry-run' || '--version needs.release.outputs.version' }} \
+            ${{ (github.event.inputs.dry_run || github.event.inputs.snapshot) && '--dry-run' || '--version ${{needs.release.outputs.version}}' }} \
             ./build/*.msi \
             ./build/*.zip \
             ./build/*.tar.gz \
